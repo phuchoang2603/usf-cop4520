@@ -12,6 +12,7 @@ in
     cudaPkgs.cuda_cudart
     cudaPkgs.cccl
     cudaPkgs.cuda_gdb
+    pkgs.nvtopPackages.nvidia
   ];
 
   env = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
