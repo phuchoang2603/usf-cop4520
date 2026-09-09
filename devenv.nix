@@ -13,8 +13,6 @@ in
     cudaPkgs.cccl
     cudaPkgs.cuda_gdb
     pkgs.nvtopPackages.nvidia
-    pkgs.code-server
-    pkgs.fosrl-newt
   ];
 
   env = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
@@ -25,11 +23,6 @@ in
   enterShell = lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
     export LD_LIBRARY_PATH="/run/opengl-driver/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
   '';
-
-  processes = {
-    code-server.exec = "code-server --bind-addr 127.0.0.1:8081 --auth none";
-    fosrl-newt.exec = "newt --id zu6qlk6c58tvn8g --secret ll0co7c431xuy6kyfko0075bcfbjhjrv8oufiya0ierayl0g --endpoint https://pangolin.vps.phuchoang.sbs";
-  };
 
   scripts.nvccrun.exec = ''
     if [ -z "$1" ]; then
