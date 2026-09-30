@@ -1,6 +1,6 @@
 # User Python, containers, and notebooks
 
-Prefer the repo's devenv for its existing workflows. Use these alternatives when they fit the workload or solve a demonstrated environment limitation.
+CUDA coursework uses the course `runScript.sh` and host toolkit (see [cuda.md](cuda.md)). Use these user-owned environments only when a task needs Python packages or a container. Do not use Nix/devenv on GAIVI.
 
 ## Conda
 

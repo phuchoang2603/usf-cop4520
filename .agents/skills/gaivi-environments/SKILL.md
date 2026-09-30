@@ -1,22 +1,23 @@
 ---
 name: gaivi-environments
-description: Use the verified rootless Nix/devenv setup on GAIVI and build compatible CUDA coursework binaries; configure user Conda or Singularity environments when those suit the task.
+description: Build and run CUDA coursework on GAIVI with the course-provided runScript and host CUDA 11.4 toolkit, and configure user Conda or Singularity environments when those suit the task. Nix/devenv is not used on GAIVI.
 ---
 
 # GAIVI development environments
 
-Prefer this repo's Nix devenv when practical. On the remote account, Nix lives inside an existing rootless `nix-user-chroot` setup, not directly in the default noninteractive SSH environment. Do not reinstall Nix or use `sudo`.
+Use only GAIVI's host software for building and running on the cluster. For CUDA coursework follow the course instructions: `/apps/GPU_course/runScript.sh file.cu args...`. Do not use the Nix chroot or devenv on GAIVI, even though they exist in the account. Do not install system software or use `sudo`.
+
+Run remote commands as `ssh gaivi 'command'`. An interactive `ssh gaivi` enters a rootless Nix chroot from the user's `.bashrc`; avoid running coursework from that shell. Do not edit the user's remote shell configuration unless asked.
 
 Read the reference matching the task:
 
-- [references/nix.md](references/nix.md): entering the verified chroot, running devenv over SSH, and using it inside Slurm steps.
-- [references/cuda.md](references/cuda.md): compiling course CUDA code for accessible GPUs, avoiding the repo's architecture mismatch, and diagnosing runtime failures.
+- [references/cuda.md](references/cuda.md): the official `runScript.sh` workflow, host CUDA toolchain facts, and runtime diagnosis.
 - [references/python-containers.md](references/python-containers.md): user Conda environments, Singularity jobs, and JupyterHub.
 
-Check actual tool versions inside the chosen environment. Use Context7 MCP for current public library/SDK documentation, and match guidance to the installed version. GAIVI documentation governs site policy; live scheduler queries govern available resources.
+Check actual tool versions on GAIVI. Use Context7 MCP for current public library/SDK documentation, and match guidance to the installed version (CUDA 11.4). Course instructions govern build/run commands, GAIVI documentation governs site policy, and live scheduler queries govern available resources.
 
-All GPU runs and work exceeding 10 minutes, one CPU core, or 2 GB RAM must go through Slurm. A Nix shell/chroot is an environment, not a scheduler allocation. Heavy builds or environment creation also belong in allocations; if no compute capacity is available, prepare the commands and report that limitation. Use `$gaivi-slurm` for submission and `$gaivi-access` for transfers.
+All GPU runs and work exceeding 10 minutes, one CPU core, or 2 GB RAM must go through Slurm (`runScript.sh` already runs the program via `srun`). Use `$gaivi-slurm` for custom jobs and `$gaivi-access` for transfers.
 
-Verified 2026-09-30: rootless Nix 2.35.2 and devenv 2.2.2 start successfully; `/apps` and `/usr/bin/srun` remain visible in the chroot. Host CUDA is 11.4.48, host GCC is 8.5.0, and no `module` command was found in a login-shell check. Both accessible compute nodes were down, so chroot, driver access, and GPU execution on compute nodes remain unverified.
+Verified 2026-09-30: host CUDA 11.4.48, host GCC 8.5.0, compute-node driver 530.30.02 on GTX 1080 Ti nodes; no `module` command. `runScript.sh` compiled and ran the Project 1 starter code successfully.
 
-Sources: [working environment](https://docs.gaivi.cse.usf.edu/doku.php?id=main:gaivi:1.manual:4.working_environment), [CUDA/container/Jupyter jobs](https://docs.gaivi.cse.usf.edu/doku.php?id=main:gaivi:1.manual:2.job_submission), plus the account's SSH shell configuration and read-only tool checks.
+Sources: course project instructions, [working environment](https://docs.gaivi.cse.usf.edu/doku.php?id=main:gaivi:1.manual:4.working_environment), [CUDA/container/Jupyter jobs](https://docs.gaivi.cse.usf.edu/doku.php?id=main:gaivi:1.manual:2.job_submission).

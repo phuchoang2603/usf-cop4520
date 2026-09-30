@@ -18,7 +18,7 @@ ssh -o BatchMode=yes -o ConnectTimeout=15 gaivi \
 
 If it fails, distinguish network/VPN failures from authentication failures. Preserve host-key verification. Consult [references/account.md](references/account.md) for the verified account paths and dated access snapshot; refresh live state before making resource decisions.
 
-Interactive `ssh gaivi` automatically enters the user's rootless Nix chroot. `ssh gaivi 'command'` does not. For Nix/devenv work use `$gaivi-environments` and its explicit chroot procedure; ordinary Slurm queries and file transfers need no chroot.
+Run remote work as `ssh gaivi 'command'`, which uses the plain host environment. Interactive `ssh gaivi` enters a rootless Nix chroot from the user's `.bashrc`; do not rely on Nix/devenv on GAIVI for anything. Use the host tools and course scripts described in `$gaivi-environments`.
 
 ## Transfer code and results
 
@@ -31,7 +31,7 @@ rsync -av --exclude='.git/' --exclude='.devenv*' \
   --exclude='.direnv/' ./ gaivi:/home/p/phuchoang/usf-cop4520/
 ```
 
-Choose narrower source paths when only an assignment needs syncing. Do not add `--delete` unless removal of destination files is explicitly part of the task. Transfer source and portable inputs; build Linux executables remotely instead of copying macOS binaries or Nix build state.
+Choose narrower source paths when only an assignment needs syncing. Do not add `--delete` unless removal of destination files is explicitly part of the task. Transfer source and portable inputs; build Linux executables remotely instead of copying macOS binaries or local `.devenv` state.
 
 Retrieve exact output paths with `scp` or `rsync`, for example:
 

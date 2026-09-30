@@ -1,4 +1,4 @@
 interface:
   display_name: "GAIVI Environments"
-  short_description: "Use rootless Nix and compatible CUDA on GAIVI"
-  default_prompt: "Use $gaivi-environments to build this CUDA assignment in my remote Nix environment."
+  short_description: "Build and run CUDA coursework with GAIVI's runScript"
+  default_prompt: "Use $gaivi-environments to compile and run this CUDA assignment on GAIVI with the course runScript."

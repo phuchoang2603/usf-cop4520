@@ -1,40 +1,49 @@
 # CUDA coursework on GAIVI
 
-## Choose the GPU target and toolkit together
+## Official course workflow
 
-Verified host tools on 2026-09-30:
-
-- `/apps/cuda/cuda-11.4/bin/nvcc`: CUDA 11.4.48.
-- `/usr/bin/gcc` and `/usr/bin/g++`: GCC 8.5.0.
-- Visible partition `ClsParSystems`: GTX 1080 Ti GPUs, Pascal compute capability 6.1 (`sm_61`). Both nodes were down; no GPU runtime was tested.
-
-The repo's `devenv.nix` selects `cudaPackages_12_6`, sets `CUDAARCHS=61`, and `nvccrun` targets `-arch=sm_61`; `devenv.yaml` sets `cuda_capabilities: ["6.1"]`. These settings target the accessible Pascal GPUs. `CUDAARCHS` alone will not override an explicit nvcc architecture flag. The helper also immediately executes the binary, so do not use it on a login node. Check the compute-node driver supports the selected CUDA runtime before using the Nix-built executable; the verified host toolkit is an alternative for older drivers.
-
-For the existing Pascal access, use a compiler supporting `sm_61`. CUDA 13 removed offline compilation and library support for Pascal; use a compatible CUDA 12.x version or the verified host CUDA 11.4. Confirm with `nvcc --version` and `nvcc --list-gpu-code`. Do not blindly use the latest Nix CUDA package or pair host CUDA 11.4 with the repo's GCC 13 override. If adapting the repo environment is requested, align its toolkit, host compiler, capability setting, and build commands together.
-
-## Small compilation with the verified host toolkit
-
-From the remote checkout, this bounded single-process build does not require a GPU:
+The course instructions (e.g. `projects/proj1/Project1_Spatial_Distance_Histogram.md`) compile and run with the provided script, and grading uses the same command:
 
 ```sh
-mkdir -p build
-/apps/cuda/cuda-11.4/bin/nvcc -ccbin /usr/bin/g++ \
-  -O2 -std=c++14 -arch=sm_61 week2/vector_add.cu -o build/vector_add
+ssh gaivi 'cd /home/p/phuchoang/usf-cop4520/projects/proj1 && /apps/GPU_course/runScript.sh SDH_base.cu 10000 500'
 ```
 
-Use the language standard required by the source. If invoking host nvcc from within devenv, clear Nix-specific `NVCC_PREPEND_FLAGS`/`NVCC_APPEND_FLAGS` and incompatible include/link flags instead of mixing toolchains. For longer or larger builds use a Slurm allocation.
+Arguments after the `.cu` file are passed to the program. The script (read 2026-09-30) does:
 
-After preparing a GPU sbatch script and checking capacity, run `build/vector_add` with `srun` in a GPU allocation. Compile on GAIVI Linux, not macOS. Do not compile with `-arch=native` on a GPU-less login node.
+```bash
+nvcc --version
+mkdir -p "$HOME/tmp"
+export TMPDIR=${SLURM_TMPDIR:-$HOME/tmp}
+nvcc "$SCRIPT" -o exe --ptxas-options=-v
+srun -v --exclusive -p ClsParSystems --time=1:00:00 --gres=gpu:1080Ti:1 ./exe "$@"
+```
 
-Verification on 2026-09-30: the existing `week2/vector_add.cu` compiled successfully with host CUDA 11.4 and GCC 8.5. `cuobjdump --list-elf` confirmed `sm_61` cubins. A bounded `srun --immediate=5` GPU allocation attempt (job 496334) failed because the eligible nodes were down. This verifies compilation, not GPU runtime correctness. The complete Linux package list and environment in `devenv.nix` also evaluated successfully with the pinned Nix inputs; the CUDA 12.6 Nix build/runtime has not been exercised on a compute node.
+Consequences:
+
+- It compiles on the login node with plain `nvcc` (CUDA 11.4, host GCC 8.5) and no extra flags. Submitted code must compile exactly this way: no required `-arch`, `-std`, `-I`, or `-l` flags. The default target is embedded `sm_52`/`compute_52` code, which runs on the GTX 1080 Ti (`sm_61`).
+- It writes `exe` into the current directory, overwriting any existing `exe`. Run it from the source's directory or a scratch directory, and do not commit `exe`.
+- `srun --exclusive` allocates the whole node (32 CPUs, all 4 GPUs) for the run, and the program sees one GPU. It blocks until the node is free and the program exits, with a one-hour limit. Keep runs short, and don't run several at once.
+- The script is maintained by the course TA and may change; re-read it with `cat /apps/GPU_course/runScript.sh` if behavior differs.
+
+Verified 2026-09-30: `runScript.sh SDH_base.cu 10000 500` compiled and ran on `GPU8` (job 496665, `COMPLETED 0:0`) and printed the CPU histogram with total `49995000` (= 10000·9999/2).
+
+## Host toolchain facts
+
+- `nvcc`: `/apps/cuda/cuda-11.4/bin/nvcc` (11.4.48), already first on the default `PATH`.
+- Host compiler: `/usr/bin/gcc`/`g++` 8.5.0.
+- GPUs on `GPU8`/`GPU9`: GTX 1080 Ti, 11 GB, compute capability 6.1; driver 530.30.02.
+
+Use only this host toolchain on GAIVI. Do not use the Nix chroot or devenv there for building or running anything.
+
+For debugging outside the script (e.g. `cuda-gdb`, `compute-sanitizer`, or a longer batch run), compile with `nvcc` directly and run in a GPU allocation from `$gaivi-slurm`. Still confirm the final file builds and runs with `runScript.sh` before submission.
 
 ## Runtime verification and diagnosis
 
 - Check `nvidia-smi` and the allocated GPU model inside the job, not on the login node.
-- Preserve `CUDA_VISIBLE_DEVICES`. Device ordinal 0 is the first GPU visible to the process, which need not be the host's physical GPU 0. Do not follow the old site example by hardcoding a physical GPU index.
-- GPU resource allocation and application multi-GPU support are separate: requesting multiple GPUs does not make a single-GPU program use them.
-- For missing driver/runtime libraries, inspect `ldd` on the binary and library visibility inside the actual execution environment. CUDA runtime libraries and the host driver library `libcuda.so` have different roles.
-- `no kernel image is available` suggests incompatible target code; confirm architecture flags and toolkit support. `unsupported GNU version` suggests a compiler/toolkit mismatch; choose a supported compiler instead of bypassing checks by default.
-- Check both kernel-launch and synchronization errors. For performance measurements distinguish compilation, allocation/queue time, host transfers, and GPU execution. Retrieve application validation output and Slurm exit status before claiming success.
+- Preserve `CUDA_VISIBLE_DEVICES`. Device ordinal 0 is the first GPU visible to the process, not necessarily physical GPU 0. Do not hardcode physical GPU indices.
+- Requesting multiple GPUs does not make a single-GPU program use them.
+- For missing libraries, run `ldd` on the binary inside the allocation. CUDA runtime libraries and the host driver library `libcuda.so` (in `/lib64`) have different roles.
+- `no kernel image is available` suggests incompatible target code; check any `-arch` flags. Check both kernel-launch errors (`cudaGetLastError`) and synchronization errors.
+- For performance measurements, time kernels consistently (e.g. CUDA events around the launch and synchronize) and keep compilation, queue time, host transfers, and kernel execution separate. Retrieve validation output (e.g. `PASS`/`FAIL`) and the Slurm exit status before claiming success.
 
-Sources: [GAIVI CUDA compilation](https://docs.gaivi.cse.usf.edu/doku.php?id=main:gaivi:1.manual:2.job_submission#compile_and_submit_cuda_jobs), [NVIDIA architecture feature archive](https://docs.nvidia.com/cuda/cuda-features-archive/index.html), [CUDA environment variables](https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/environment-variables.html), [CUDA runtime device API](https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__DEVICE.html). NVIDIA guidance was checked through Context7; apply commands supported by the installed toolkit rather than newer documentation examples indiscriminately.
+Sources: course project instructions, `/apps/GPU_course/runScript.sh`, [GAIVI CUDA compilation](https://docs.gaivi.cse.usf.edu/doku.php?id=main:gaivi:1.manual:2.job_submission#compile_and_submit_cuda_jobs), [CUDA runtime device API](https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__DEVICE.html).

@@ -11,28 +11,40 @@ Use `ssh gaivi` for submission and scheduler queries. First verify live resource
 ssh gaivi 'sinfo -N -o "%N %P %t %c %m %G"; scontrol show partition ClsParSystems; squeue --me'
 ```
 
-On 2026-09-30 this account saw only `ClsParSystems`, with a 24-hour limit and four GTX 1080 Ti GPUs per node on `GPU8` and `GPU9`. Both nodes were down. Refresh these facts; do not substitute documentation examples such as `general`, `Quick`, or `Contributors` without verifying access. A partition being up does not imply its nodes are usable. If all eligible nodes are down, prepare the job and report the blocker; do not launch blocking interactive probes or repeatedly resubmit.
+On 2026-09-30 this account saw only `ClsParSystems`, with a 24-hour limit and four GTX 1080 Ti GPUs per node on `GPU8` and `GPU9`. Both nodes are up (`idle`); GPU jobs were allocated within seconds and ran successfully. Refresh these facts; do not substitute documentation examples such as `general`, `Quick`, or `Contributors` without verifying access. A partition being up does not imply its nodes are usable. If all eligible nodes are down, prepare the job and report the blocker; do not launch blocking interactive probes or repeatedly resubmit.
+
+## Course CUDA runs
+
+For course CUDA programs use the provided script, which compiles with `nvcc` and runs the binary via `srun` on `ClsParSystems` with one 1080 Ti:
+
+```sh
+ssh gaivi 'cd /home/p/phuchoang/usf-cop4520/projects/proj1 && /apps/GPU_course/runScript.sh SDH_base.cu 10000 500'
+```
+
+It blocks until the run finishes, allocates the whole node exclusively, and writes `exe` into the current directory. See `$gaivi-environments` for details. Use the templates below only for runs the script can't handle, such as long batch runs, custom resources, or debugging tools.
 
 ## Prepare and submit
 
 Use [assets/cpu.sbatch](assets/cpu.sbatch) or [assets/gpu.sbatch](assets/gpu.sbatch) as small starting points. Copy the relevant asset into the assignment directory and adjust resources to the actual program. Both accept the command and its arguments after the script name, preserve argument boundaries, and propagate the `srun` exit status.
 
 ```sh
-# On GAIVI, after syncing the assignment and selected template:
-cd /home/p/phuchoang/usf-cop4520
-sbatch --parsable gpu.sbatch ./week2/vector_add
+# On GAIVI, after syncing, building with host nvcc, and copying the template:
+cd /home/p/phuchoang/usf-cop4520/projects/proj1
+nvcc SDH_base.cu -o SDH
+sbatch --parsable gpu.sbatch ./SDH 10000 500
 ```
 
 Use absolute `--chdir` when submitting from another directory. Output paths are relative to the job working directory; create any desired log subdirectory before submission. Capture the returned job ID, remote working directory, command, and output paths.
 
 - Keep all `#SBATCH` directives before executable statements. They are not shell-expanded; use literal values or `sbatch` CLI overrides.
 - Request CPU, memory, GPU, and time explicitly. `--mem` is per node. `--cpus-per-task` is threads per process; `--ntasks` is processes. A multithreaded CUDA/OpenMP program normally uses one task, while MPI uses multiple tasks.
+- Nodes have two hardware threads per core, so `--cpus-per-task=1` is allocated as 2 CPUs. A bare `srun` without `--ntasks=1` launched the command twice; always pass `--ntasks` explicitly (the templates do).
 - Run computation as `srun` steps. GPU jobs must request GPUs; do not run GPU programs on the login node or directly SSH into compute nodes.
 - Only pin `--nodelist` when the task needs a verified specific node. Do not use `--exclusive` merely to run a small assignment.
 - For concurrent steps in a single allocation, give each step explicit resource subsets and `--exact`; wait for every process and propagate failures. MPI additionally requires checking the installed MPI/Slurm launch compatibility.
 - The manual documents six simultaneous running jobs per user. Avoid flooding the queue; verify live limits when needed.
 
-If the user asks only for a script, stop after preparing it. Submit when running the workload is in scope. Nix/devenv commands need explicit chroot entry within the allocated step; see `$gaivi-environments`.
+If the user asks only for a script, stop after preparing it. Submit when running the workload is in scope. Jobs use the plain host environment; do not wrap job steps in the Nix chroot or devenv.
 
 ## Observe and diagnose
 
