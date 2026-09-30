@@ -1,0 +1,4 @@
+interface:
+  display_name: "GAIVI Slurm"
+  short_description: "Prepare and diagnose GAIVI CPU and GPU jobs"
+  default_prompt: "Use $gaivi-slurm to prepare a GPU job for this assignment and check available capacity."

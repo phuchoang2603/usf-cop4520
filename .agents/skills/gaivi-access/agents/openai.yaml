@@ -1,0 +1,4 @@
+interface:
+  display_name: "GAIVI Access"
+  short_description: "Connect to GAIVI and sync course files safely"
+  default_prompt: "Use $gaivi-access to verify my connection and sync this assignment to GAIVI."
