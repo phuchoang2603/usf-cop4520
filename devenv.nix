@@ -1,8 +1,9 @@
 { pkgs, lib, ... }:
 
 let
-  cudaPkgs = pkgs.cudaPackages;
-  # nvcc lags system GCC; 13 is a safe host compiler for current CUDA toolkits.
+  # CUDA 13 dropped Pascal (sm_61); keep a compatible CUDA 12 toolkit.
+  cudaPkgs = pkgs.cudaPackages_12_6;
+  # CUDA 12.6 supports GCC 13 as its host compiler.
   nvccHostCc = pkgs.gcc13;
 in
 {
@@ -16,7 +17,7 @@ in
   ];
 
   env = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
-    CUDAARCHS = "75";
+    CUDAARCHS = "61";
     NVCC_PREPEND_FLAGS = "-ccbin ${nvccHostCc}/bin";
   };
 
@@ -33,7 +34,7 @@ in
     base="''${file%.*}"
     echo "--- Compiling $file ---"
 
-    nvcc -O2 -arch=sm_75 "$file" -o "$base" && {
+    nvcc -O2 -arch=sm_61 "$file" -o "$base" && {
       echo "--- Running $base ---"
       ./"$base"
       rm -f "$base"

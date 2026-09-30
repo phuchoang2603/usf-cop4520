@@ -8,4 +8,4 @@ allow_unfree: true
 nixpkgs:
   allow_unfree: true
   cuda_support: true
-  cuda_capabilities: ["7.5"]
+  cuda_capabilities: ["6.1"]
