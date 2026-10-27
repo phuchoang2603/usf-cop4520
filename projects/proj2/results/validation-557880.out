@@ -1,0 +1,35 @@
+name, driver_version
+NVIDIA GeForce GTX 1080 Ti, 530.30.02
+RUN 1 500 1
+******** Total Kernel Execution Time = 0.000032 sec *******
+PASS 1 500 1
+RUN 2 500 32
+******** Total Kernel Execution Time = 0.000025 sec *******
+PASS 2 500 32
+RUN 257 500 96
+******** Total Kernel Execution Time = 0.000132 sec *******
+PASS 257 500 96
+RUN 10000 500 128
+******** Total Kernel Execution Time = 0.008869 sec *******
+PASS 10000 500 128
+RUN 10000 500 256
+******** Total Kernel Execution Time = 0.009685 sec *******
+PASS 10000 500 256
+RUN 10000 500 512
+******** Total Kernel Execution Time = 0.010541 sec *******
+PASS 10000 500 512
+RUN 10000 5 256
+******** Total Kernel Execution Time = 0.008348 sec *******
+PASS 10000 5 256
+RUN 100000 500 256
+******** Total Kernel Execution Time = 0.772810 sec *******
+PASS 100000 500 256
+PASS rejected invalid input: 
+PASS rejected invalid input: 0 500 256
+PASS rejected invalid input: 10 0 256
+PASS rejected invalid input: 10 nan 256
+PASS rejected invalid input: 10 500 0
+PASS rejected invalid input: 10 500 1025
+PASS rejected invalid input: abc 500 256
+PASS rejected invalid input: 10 0.000001 256
+ALL TESTS PASSED
